@@ -16,57 +16,57 @@ encoding(_) ->
 	nok.
 
 
-decode(<<L, Tail/binary>>) when L >= $0, L =< $9 ->
-	decode_string({len, L - $0}, Tail);
+decode(<<L, Rest/binary>>) when L >= $0, L =< $9 ->
+	decode_string({len, L - $0}, Rest);
 
-decode(<<$i, Tail/binary>>) ->
-	decode_int({positive, 0}, Tail);
+decode(<<$i, Rest/binary>>) ->
+	decode_int({positive, 0}, Rest);
 
-decode(<<$l, Tail/binary>>) ->
-	decode_list([], Tail);
+decode(<<$l, Rest/binary>>) ->
+	decode_list([], Rest);
 
-decode(<<$d, Tail/binary>>) ->
-	decode_dictionary(#{}, Tail).
-
-
-decode_int({positive, N}, <<$e, Tail/binary>>) ->
-	{ok, N, Tail};
-
-decode_int({negative, N}, <<$e, Tail/binary>>) ->
-	{ok, -N, Tail};
-
-decode_int({positive, 0}, <<$-, Tail/binary>>) ->
-	decode_int({negative, 0}, Tail);
-
-decode_int({PosNeg, N}, <<L, Tail/binary>>) when L >= $0, L =< $9 ->
-	decode_int({PosNeg, 10 * N + (L - $0)}, Tail).
+decode(<<$d, Rest/binary>>) ->
+	decode_dictionary(#{}, Rest).
 
 
-decode_list(List, <<$e, Tail/binary>>) ->
-	{ok, lists:reverse(List), Tail};
+decode_int({positive, N}, <<$e, Rest/binary>>) ->
+	{ok, N, Rest};
 
-decode_list(List, <<Tail/binary>>) ->
-	{ok, Element, NextTail} = decode(Tail),
-	decode_list([Element | List], NextTail).
+decode_int({negative, N}, <<$e, Rest/binary>>) ->
+	{ok, -N, Rest};
 
+decode_int({positive, 0}, <<$-, Rest/binary>>) ->
+	decode_int({negative, 0}, Rest);
 
-decode_dictionary(Dictionary, <<$e, Tail/binary>>) ->
-	{ok, Dictionary, Tail};
-
-decode_dictionary(Dictionary, <<Tail/binary>>) ->
-	{ok, Key, NextTail} = decode(Tail),
-	{ok, Value, NextNextTail} = decode(NextTail),
-	decode_dictionary(maps:put(Key, Value, Dictionary), NextNextTail).
+decode_int({PosNeg, N}, <<L, Rest/binary>>) when L >= $0, L =< $9 ->
+	decode_int({PosNeg, 10 * N + (L - $0)}, Rest).
 
 
-decode_string({len, L}, <<N, Tail/binary>>) when N >= $0 andalso N =< $9 ->
-	decode_string({len, (L * 10 + (N - $0))}, Tail);
+decode_list(List, <<$e, Rest/binary>>) ->
+	{ok, lists:reverse(List), Rest};
 
-decode_string({len, L}, <<$:, Tail/binary>>) ->
-	decode_string({text, [], L}, Tail);
+decode_list(List, <<Rest/binary>>) ->
+	{ok, Element, NextRest} = decode(Rest),
+	decode_list([Element | List], NextRest).
 
-decode_string({text, Text, 0}, <<Tail/binary>>) ->
-	{ok, lists:reverse(Text), Tail};
 
-decode_string({text, Text, L}, <<Char, Tail/binary>>) ->
-	decode_string({text, [Char | Text], L - 1}, Tail).
+decode_dictionary(Dictionary, <<$e, Rest/binary>>) ->
+	{ok, Dictionary, Rest};
+
+decode_dictionary(Dictionary, <<Rest/binary>>) ->
+	{ok, Key, NextRest} = decode(Rest),
+	{ok, Value, NextNextRest} = decode(NextRest),
+	decode_dictionary(maps:put(Key, Value, Dictionary), NextNextRest).
+
+
+decode_string({len, L}, <<N, Rest/binary>>) when N >= $0 andalso N =< $9 ->
+	decode_string({len, (L * 10 + (N - $0))}, Rest);
+
+decode_string({len, L}, <<$:, Rest/binary>>) ->
+	decode_string({text, [], L}, Rest);
+
+decode_string({text, Text, 0}, <<Rest/binary>>) ->
+	{ok, lists:reverse(Text), Rest};
+
+decode_string({text, Text, L}, <<Char, Rest/binary>>) ->
+	decode_string({text, [Char | Text], L - 1}, Rest).
