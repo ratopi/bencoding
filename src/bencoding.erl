@@ -10,10 +10,19 @@
 -author("ratopi@abwesend.de").
 
 %% API
--export([encoding/1, decode/1]).
+-export([encode/1, decode/1]).
 
-encoding(_) ->
-	nok.
+encode(<<String/binary>>) ->
+	encode_string([], String);
+
+encode(N) when is_integer(N) ->
+	encode_int(start, N);
+
+encode(L) when is_list(L) ->
+	encode_list(start, L);
+
+encode(M) when is_map(M) ->
+	encode_dictionary(start, M).
 
 
 decode(<<L, Rest/binary>>) when L >= $0, L =< $9 ->
@@ -28,6 +37,78 @@ decode(<<$l, Rest/binary>>) ->
 decode(<<$d, Rest/binary>>) ->
 	decode_dictionary(#{}, Rest).
 
+%%
+%% Internal Functions
+%%
+
+encode_string(Text, <<>>) ->
+	{ok, list_to_binary(integer_to_list(length(Text)) ++ [$:] ++ lists:reverse(Text))};
+
+encode_string(Text, <<Char, Rest/binary>>) ->
+	encode_string([Char | Text], Rest).
+
+
+encode_int(start, 0) ->
+	encode_int({positive, "0"}, 0);
+
+encode_int(start, N) when N < 0 ->
+	encode_int({negative, []}, -N);
+
+encode_int(start, N) ->
+	encode_int({positive, []}, N);
+
+encode_int({negative, Text}, 0) ->
+	{
+		ok,
+		list_to_binary(
+			[$i, $- | lists:reverse([$e, Text])]
+		)
+	};
+
+encode_int({positive, Text}, 0) ->
+	{
+		ok,
+		list_to_binary(
+			[$i | lists:reverse([$e, Text])]
+		)
+	};
+
+encode_int({NegPos, Text}, N) ->
+	Digit = N rem 10,
+	encode_int({NegPos, [Digit + $0 | Text]}, N div 10).
+
+
+encode_list(start, L) ->
+	encode_list(<<$l>>, L);
+
+encode_list(<<Output/binary>>, []) ->
+	{ok, <<Output/binary, $e>>};
+
+encode_list(<<Output/binary>>, [H | T]) ->
+	{ok, Element} = encode(H),
+	encode_list(<<Output/binary, Element/binary>>, T).
+
+
+encode_dictionary(start, M) ->
+	encode_dictionary({<<$d>>, maps:keys(M)}, M);
+
+encode_dictionary({<<Output/binary>>, []}, _) ->
+	{ok, <<Output/binary, $e>>};
+
+encode_dictionary({<<Output/binary>>, [Key | Keys]}, Map) ->
+	{ok, EncodedKey} = encode(Key),
+	{ok, EncodedValue} = encode(maps:get(Key, Map)),
+	encode_dictionary(
+		{
+			<<Output/binary, EncodedKey/binary, EncodedValue/binary>>,
+			Keys
+		},
+		Map
+	).
+
+%%
+%%
+%%
 
 decode_int({positive, N}, <<$e, Rest/binary>>) ->
 	{ok, N, Rest};
