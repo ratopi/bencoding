@@ -79,28 +79,28 @@ encode_int({NegPos, Text}, N) ->
 
 
 encode_list(start, L) ->
-	encode_list(<<$l>>, L);
+	encode_list([$l], L);
 
-encode_list(<<Output/binary>>, []) ->
-	{ok, <<Output/binary, $e>>};
+encode_list(Output, []) ->
+	{ok, list_to_binary(lists:reverse([$e | Output]))};
 
-encode_list(<<Output/binary>>, [H | T]) ->
+encode_list(Output, [H | T]) ->
 	{ok, Element} = encode(H),
-	encode_list(<<Output/binary, Element/binary>>, T).
+	encode_list([Element | Output], T).
 
 
 encode_dictionary(start, M) ->
-	encode_dictionary({<<$d>>, maps:keys(M)}, M);
+	encode_dictionary({[$d], maps:keys(M)}, M);
 
-encode_dictionary({<<Output/binary>>, []}, _) ->
-	{ok, <<Output/binary, $e>>};
+encode_dictionary({Output, []}, _) ->
+	{ok, list_to_binary(lists:reverse([$e | Output]))};
 
-encode_dictionary({<<Output/binary>>, [Key | Keys]}, Map) ->
+encode_dictionary({Output, [Key | Keys]}, Map) ->
 	{ok, EncodedKey} = encode(Key),
 	{ok, EncodedValue} = encode(maps:get(Key, Map)),
 	encode_dictionary(
 		{
-			<<Output/binary, EncodedKey/binary, EncodedValue/binary>>,
+			[EncodedValue, EncodedKey, Output],
 			Keys
 		},
 		Map
