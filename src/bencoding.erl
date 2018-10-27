@@ -2,7 +2,8 @@
 %%% @author ratopi@abwesend.de
 %%% @copyright (C) 2016, Ralf Th. Pietsch
 %%% @doc
-%%%
+%%% Use decode to decode a binary containing an bencoded string.
+%%% Use encode to generate a binary containing an bencoded string.
 %%% @end
 %%% Created : 29. Dez 2016 17:43
 %%%-------------------------------------------------------------------
