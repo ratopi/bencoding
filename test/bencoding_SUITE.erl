@@ -47,6 +47,7 @@ end_per_testcase(_, _Config) ->
 % ---
 
 encode_string(_Config) ->
+	{ok, <<"0:">>} = bencoding:encode(<<"">>),
 	{ok, <<"4:test">>} = bencoding:encode(<<"test">>).
 
 encode_int(_Config) ->
@@ -64,6 +65,7 @@ encode_dictionary(_Config) ->
 % ---
 
 decode_string(_Config) ->
+	{ok, "", <<>>} = bencoding:decode(<<"0:">>),
 	{ok, "test", <<>>} = bencoding:decode(<<"4:test">>),
 	{ok, "krimskram", <<>>} = bencoding:decode(<<"9:krimskram">>).
 
