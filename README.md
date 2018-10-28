@@ -8,3 +8,11 @@ A simple encoder/decoder for decoding and encoding data in the bencoding style
 * Bencode-strings will be converted to Erlang binary strings.
 * Bencode-list will be converted to Erlang lists.
 * Bencode-dictionaries will be converted to Erlang maps. (#{})
+
+## Use
+
+Get it via hex.pm!   Just add
+
+	{deps, [bencoding]}.
+	
+to your rebar.config.
