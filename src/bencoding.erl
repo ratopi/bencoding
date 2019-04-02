@@ -1,11 +1,11 @@
 %%%-------------------------------------------------------------------
 %%% @author ratopi@abwesend.de
-%%% @copyright (C) 2016, Ralf Th. Pietsch
+%%% @copyright (C) 2016-2019, Ralf Th. Pietsch
 %%% @doc
 %%% Use decode to decode a binary containing an bencoded string.
 %%% Use encode to generate a binary containing an bencoded string.
 %%% @end
-%%% Created : 29. Dez 2016 17:43
+%%% Created : 2016-12-29 17:43
 %%%-------------------------------------------------------------------
 -module(bencoding).
 -author("ratopi@abwesend.de").
@@ -14,10 +14,12 @@
 -export([encode/1, decode/1]).
 
 encode(<<String/binary>>) ->
-	encode_string([], String);
+	Len = integer_to_binary(byte_size(String)),
+	{ok, <<Len/binary, $:, String/binary>>};
 
 encode(N) when is_integer(N) ->
-	encode_int(start, N);
+	Bin = integer_to_binary(N),
+	{ok, <<$i, Bin/binary, $e>>};
 
 encode(L) when is_list(L) ->
 	encode_list(start, L);
@@ -41,43 +43,6 @@ decode(<<$d, Rest/binary>>) ->
 %%
 %% Internal Functions
 %%
-
-encode_string(Text, <<>>) ->
-	{ok, list_to_binary(integer_to_list(length(Text)) ++ [$:] ++ lists:reverse(Text))};
-
-encode_string(Text, <<Char, Rest/binary>>) ->
-	encode_string([Char | Text], Rest).
-
-
-encode_int(start, 0) ->
-	encode_int({positive, "0"}, 0);
-
-encode_int(start, N) when N < 0 ->
-	encode_int({negative, []}, -N);
-
-encode_int(start, N) ->
-	encode_int({positive, []}, N);
-
-encode_int({negative, Text}, 0) ->
-	{
-		ok,
-		list_to_binary(
-			[$i, $- | lists:reverse([$e, Text])]
-		)
-	};
-
-encode_int({positive, Text}, 0) ->
-	{
-		ok,
-		list_to_binary(
-			[$i | lists:reverse([$e, Text])]
-		)
-	};
-
-encode_int({NegPos, Text}, N) ->
-	Digit = N rem 10,
-	encode_int({NegPos, [Digit + $0 | Text]}, N div 10).
-
 
 encode_list(start, L) ->
 	encode_list([$l], L);
