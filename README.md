@@ -2,6 +2,7 @@
 
 A simple encoder/decoder for decoding and encoding data in the bencoding style
 
+
 ## Mapping
 
 * Bencode-integer will be converted to Erlang integers.
@@ -9,13 +10,17 @@ A simple encoder/decoder for decoding and encoding data in the bencoding style
 * Bencode-list will be converted to Erlang lists.
 * Bencode-dictionaries will be converted to Erlang maps. (#{})
 
+
 ## Use
 
 Get it via hex.pm!   Just add
 
 	{deps, [bencoding]}.
-	
+
 to your rebar.config.
+
+See https://hex.pm/packages/bencoding for info about the hex package.
+
 
 ### Decoding
 
@@ -29,10 +34,10 @@ Example: Reading a torrent file:
 
 M holds the result.
 
+
 ### Encoding
 
 Use bencdoing:encode/1 to encode (with M from above):
 
 	{ok, B} = bencoding:encode(M).
 	B.
-	
