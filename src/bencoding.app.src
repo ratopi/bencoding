@@ -22,6 +22,8 @@
 	{licenses, ["MIT"]},
 
 	{links, [
-		{"Github", "https://github.com/ratopi/bencoding"}
+		{"GitHub", "https://github.com/ratopi/bencoding"},
+		{"Issues", "https://github.com/ratopi/bencoding/issues"},
+		{"Contributors", "https://github.com/ratopi/bencoding/graphs/contributors"}
 	]}
 ]}.
