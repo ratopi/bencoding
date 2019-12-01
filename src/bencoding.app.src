@@ -1,20 +1,26 @@
 {application, bencoding, [
+
 	{description, "An encoder/decoder for bittorrent data representation in pure Erlang"},
-	{vsn, "0.2.0"},
+	{vsn, "1.0.0"},
+
 	{registered, []},
+
 	{applications, [
 		kernel,
 		stdlib
 	]},
+
 	{env, []},
 	{modules, [
 		bencoding
 	]},
 
 	{maintainers, [
-		"Ralf Th. Pietsch"
+		"Ralf Th. Pietsch <ratopi@abwesend.de>"
 	]},
+
 	{licenses, ["MIT"]},
+
 	{links, [
 		{"Github", "https://github.com/ratopi/bencoding"}
 	]}

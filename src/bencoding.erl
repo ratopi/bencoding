@@ -8,10 +8,14 @@
 %%% Created : 2016-12-29 17:43
 %%%-------------------------------------------------------------------
 -module(bencoding).
--author("ratopi@abwesend.de").
+-author("Ralf Th. Pietsch <ratopi@abwesend.de>").
 
 %% API
 -export([encode/1, decode/1]).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
 
 encode(<<String/binary>>) ->
 	Len = integer_to_binary(byte_size(String)),
@@ -28,6 +32,7 @@ encode(M) when is_map(M) ->
 	encode_dictionary(start, M).
 
 
+
 decode(<<L, Rest/binary>>) when L >= $0, L =< $9 ->
 	decode_string({len, L - $0}, Rest);
 
@@ -40,9 +45,9 @@ decode(<<$l, Rest/binary>>) ->
 decode(<<$d, Rest/binary>>) ->
 	decode_dictionary(#{}, Rest).
 
-%%
-%% Internal Functions
-%%
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 encode_list(start, L) ->
 	encode_list([$l], L);

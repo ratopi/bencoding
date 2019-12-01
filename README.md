@@ -41,3 +41,8 @@ Use bencdoing:encode/1 to encode (with M from above):
 
 	{ok, B} = bencoding:encode(M).
 	B.
+
+
+## Issues
+
+If you miss any feature or found a bug, please let me know on github: https://github.com/ratopi/bencoding/issues
