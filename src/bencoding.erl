@@ -37,7 +37,7 @@ decode(<<L, Rest/binary>>) when L >= $0, L =< $9 ->
 	decode_string({len, L - $0}, Rest);
 
 decode(<<$i, Rest/binary>>) ->
-	decode_int({positive, 0}, Rest);
+	decode_int(start, Rest);
 
 decode(<<$l, Rest/binary>>) ->
 	decode_list([], Rest);
@@ -61,17 +61,17 @@ encode_list(Output, [H | T]) ->
 
 
 encode_dictionary(start, M) ->
-	encode_dictionary({[$d], maps:keys(M)}, M);
+	encode_dictionary({[$d], lists:sort(maps:keys(M))}, M);
 
 encode_dictionary({Output, []}, _) ->
-	{ok, list_to_binary(lists:reverse([$e | Output]))};
+	{ok, list_to_binary([Output, $e])};
 
 encode_dictionary({Output, [Key | Keys]}, Map) ->
 	{ok, EncodedKey} = encode(Key),
 	{ok, EncodedValue} = encode(maps:get(Key, Map)),
 	encode_dictionary(
 		{
-			[EncodedValue, EncodedKey, Output],
+			[Output, EncodedKey, EncodedValue],
 			Keys
 		},
 		Map
@@ -81,14 +81,31 @@ encode_dictionary({Output, [Key | Keys]}, Map) ->
 %%
 %%
 
-decode_int({positive, N}, <<$e, Rest/binary>>) ->
-	{ok, N, Rest};
+%% start state: first character after 'i'
+decode_int(start, <<$0, $e, Rest/binary>>) ->
+	{ok, 0, Rest};
 
+decode_int(start, <<$0, _Rest/binary>>) ->
+	{error, leading_zero};
+
+decode_int(start, <<$-, $0, $e, _Rest/binary>>) ->
+	{error, negative_zero};
+
+decode_int(start, <<$-, $0, _Rest/binary>>) ->
+	{error, leading_zero};
+
+decode_int(start, <<$-, Rest/binary>>) ->
+	decode_int({negative, 0}, Rest);
+
+decode_int(start, <<L, Rest/binary>>) when L >= $1, L =< $9 ->
+	decode_int({positive, L - $0}, Rest);
+
+%% accumulating digits
 decode_int({negative, N}, <<$e, Rest/binary>>) ->
 	{ok, -N, Rest};
 
-decode_int({positive, 0}, <<$-, Rest/binary>>) ->
-	decode_int({negative, 0}, Rest);
+decode_int({positive, N}, <<$e, Rest/binary>>) ->
+	{ok, N, Rest};
 
 decode_int({PosNeg, N}, <<L, Rest/binary>>) when L >= $0, L =< $9 ->
 	decode_int({PosNeg, 10 * N + (L - $0)}, Rest).
@@ -115,10 +132,5 @@ decode_string({len, L}, <<N, Rest/binary>>) when N >= $0 andalso N =< $9 ->
 	decode_string({len, (L * 10 + (N - $0))}, Rest);
 
 decode_string({len, L}, <<$:, Rest/binary>>) ->
-	decode_string({text, [], L}, Rest);
-
-decode_string({text, Text, 0}, <<Rest/binary>>) ->
-	{ok, lists:reverse(Text), Rest};
-
-decode_string({text, Text, L}, <<Char, Rest/binary>>) ->
-	decode_string({text, [Char | Text], L - 1}, Rest).
+	<<Text:L/binary, Remaining/binary>> = Rest,
+	{ok, Text, Remaining}.
