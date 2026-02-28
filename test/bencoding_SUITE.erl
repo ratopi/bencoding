@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Ralf Thomas Pietsch <ratopi@abwesend.de>
-%%% @copyright (C) 2018, Ralf Thomas Pietsch
+%%% @copyright (C) 2016-2026, Ralf Thomas Pietsch
 %%% @doc
 %%%
 %%% @end

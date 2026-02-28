@@ -1,9 +1,64 @@
 %%%-------------------------------------------------------------------
-%%% @author ratopi@abwesend.de
-%%% @copyright (C) 2016-2019, Ralf Th. Pietsch
-%%% @doc
-%%% Use decode to decode a binary containing an bencoded string.
-%%% Use encode to generate a binary containing an bencoded string.
+%%% @author Ralf Thomas Pietsch <ratopi@abwesend.de>
+%%% @copyright (C) 2016-2026, Ralf Th. Pietsch
+%%% @doc Encoder and decoder for the Bencoding data format used by BitTorrent.
+%%%
+%%% Implements the Bencoding serialization format as specified in
+%%% <a href="https://www.bittorrent.org/beps/bep_0003.html">BEP 3</a>.
+%%%
+%%% Bencoding supports four data types:
+%%% <ul>
+%%%   <li><b>Integers</b> — mapped to Erlang `integer()'</li>
+%%%   <li><b>Byte Strings</b> — mapped to Erlang `binary()'</li>
+%%%   <li><b>Lists</b> — mapped to Erlang `list()'</li>
+%%%   <li><b>Dictionaries</b> — mapped to Erlang `map()' with binary keys</li>
+%%% </ul>
+%%%
+%%% Dictionary keys are encoded in sorted order (sorted as raw strings,
+%%% not alphanumerics) as required by BEP 3. Encoding and decoding are
+%%% roundtrip-safe.
+%%%
+%%% == Examples ==
+%%%
+%%% Encoding:
+%%% ```
+%%% > bencoding:encode(<<"spam">>).
+%%% {ok, <<"4:spam">>}
+%%%
+%%% > bencoding:encode(42).
+%%% {ok, <<"i42e">>}
+%%%
+%%% > bencoding:encode([<<"spam">>, <<"eggs">>]).
+%%% {ok, <<"l4:spam4:eggse">>}
+%%%
+%%% > bencoding:encode(#{<<"cow">> => <<"moo">>}).
+%%% {ok, <<"d3:cow3:mooe">>}
+%%% '''
+%%%
+%%% Decoding:
+%%% ```
+%%% > bencoding:decode(<<"4:spam">>).
+%%% {ok, <<"spam">>, <<>>}
+%%%
+%%% > bencoding:decode(<<"i42e">>).
+%%% {ok, 42, <<>>}
+%%%
+%%% > bencoding:decode(<<"l4:spam4:eggse">>).
+%%% {ok, [<<"spam">>, <<"eggs">>], <<>>}
+%%%
+%%% > bencoding:decode(<<"d3:cow3:mooe">>).
+%%% {ok, #{<<"cow">> => <<"moo">>}, <<>>}
+%%% '''
+%%%
+%%% Invalid integers are rejected:
+%%% ```
+%%% > bencoding:decode(<<"i-0e">>).
+%%% {error, negative_zero}
+%%%
+%%% > bencoding:decode(<<"i03e">>).
+%%% {error, leading_zero}
+%%% '''
+%%%
 %%% @end
 %%% Created : 2016-12-29 17:43
 %%%-------------------------------------------------------------------
@@ -13,9 +68,26 @@
 %% API
 -export([encode/1, decode/1]).
 
+-type bencodable() :: binary() | integer() | list(bencodable()) | #{binary() => bencodable()}.
+-type encode_result() :: {ok, binary()}.
+-type decode_result() :: {ok, bencodable(), binary()} | {error, negative_zero | leading_zero}.
+
+-export_type([bencodable/0, encode_result/0, decode_result/0]).
+
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+%%% @doc Encode an Erlang term into a bencoded binary.
+%%%
+%%% Supported input types:
+%%% <ul>
+%%%   <li>`binary()' — encoded as bencoded byte string</li>
+%%%   <li>`integer()' — encoded as bencoded integer</li>
+%%%   <li>`list()' — encoded as bencoded list</li>
+%%%   <li>`map()' — encoded as bencoded dictionary (keys sorted as raw strings)</li>
+%%% </ul>
+-spec encode(bencodable()) -> encode_result().
 
 encode(<<String/binary>>) ->
 	Len = integer_to_binary(byte_size(String)),
@@ -33,6 +105,17 @@ encode(M) when is_map(M) ->
 
 
 
+%%% @doc Decode a bencoded binary into an Erlang term.
+%%%
+%%% Returns `{ok, Value, Rest}' where `Value' is the decoded term and
+%%% `Rest' is the remaining binary data that was not consumed.
+%%%
+%%% Returns `{error, Reason}' for invalid integers:
+%%% <ul>
+%%%   <li>`{error, negative_zero}' — for `<<"i-0e">>'</li>
+%%%   <li>`{error, leading_zero}' — for `<<"i03e">>', `<<"i00e">>', `<<"i-03e">>' etc.</li>
+%%% </ul>
+-spec decode(binary()) -> decode_result().
 decode(<<L, Rest/binary>>) when L >= $0, L =< $9 ->
 	decode_string({len, L - $0}, Rest);
 
@@ -53,11 +136,11 @@ encode_list(start, L) ->
 	encode_list([$l], L);
 
 encode_list(Output, []) ->
-	{ok, list_to_binary(lists:reverse([$e | Output]))};
+	{ok, list_to_binary([Output, $e])};
 
 encode_list(Output, [H | T]) ->
 	{ok, Element} = encode(H),
-	encode_list([Element | Output], T).
+	encode_list([Output, Element], T).
 
 
 encode_dictionary(start, M) ->
